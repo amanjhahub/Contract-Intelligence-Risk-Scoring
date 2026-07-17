@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Conda
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Models (large files)
+models/*.bin
+models/*.pt
+models/*.pth
+
+# Data
+data/raw/
+data/processed/
+
+# VS Code
+.vscode/

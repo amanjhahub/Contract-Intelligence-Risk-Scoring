@@ -1,3 +1,4 @@
+from text_cleaner import clean_text
 import pdfplumber
 
 with pdfplumber.open("data/raw/contract.pdf") as pdf:
@@ -7,4 +8,6 @@ with pdfplumber.open("data/raw/contract.pdf") as pdf:
         text = page.extract_text()
         full_text += text + "\n"
 
-print(full_text)
+cleaned_text = clean_text(full_text)
+
+print(cleaned_text)

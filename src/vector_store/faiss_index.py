@@ -1,45 +1,24 @@
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
-# Load embedding model
-model = SentenceTransformer("all-MiniLM-L6-v2")
 
-# Sample chunks
-chunks = [
-    "The contractor shall complete the project.",
-    "Payment shall be made within 30 days.",
-    "The agreement may be terminated by either party."
-]
+def build_index(embeddings):
 
-# Generate embeddings
-embeddings = model.encode(chunks)
+    embeddings = np.array(embeddings).astype("float32")
 
-# Convert to float32 (FAISS requires float32)
-embeddings = np.array(embeddings).astype("float32")
+    dimension = embeddings.shape[1]
 
-# Create FAISS index
-dimension = embeddings.shape[1]
-index = faiss.IndexFlatL2(dimension)
+    index = faiss.IndexFlatL2(dimension)
 
-# Add embeddings to the index
-index.add(embeddings)
+    index.add(embeddings)
 
-print("Vectors stored:", index.ntotal)
+    return index
 
-# User query
-query = "When should payment be made?"
 
-# Generate query embedding
-query_embedding = model.encode([query])
-query_embedding = np.array(query_embedding).astype("float32")
+def search_index(index, query_embedding, k=1):
 
-# Search
-distances, indices = index.search(query_embedding, 1)
+    query_embedding = np.array(query_embedding).astype("float32")
 
-print("Nearest Index:", indices)
-print("Distance:", distances)
+    distances, indices = index.search(query_embedding, k)
 
-# Retrieve matching chunk
-print("\nRetrieved Chunk:")
-print(chunks[indices[0][0]])
+    return distances, indices

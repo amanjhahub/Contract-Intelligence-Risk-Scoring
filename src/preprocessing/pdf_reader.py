@@ -1,29 +1,17 @@
 import pdfplumber
 
-from text_cleaner import clean_text
-from text_chunker import chunk_text
 
-
-with pdfplumber.open("data/raw/contract.pdf") as pdf:
+def extract_text(pdf_path):
 
     full_text = ""
 
-    for page in pdf.pages:
-        text = page.extract_text()
-        full_text += text + "\n"
+    with pdfplumber.open(pdf_path) as pdf:
 
+        for page in pdf.pages:
 
-cleaned_text = clean_text(full_text)
+            text = page.extract_text()
 
+            if text:
+                full_text += text + "\n"
 
-chunks = chunk_text(
-    cleaned_text,
-    chunk_size=50,
-    overlap=10
-)
-
-
-for i, chunk in enumerate(chunks, start=1):
-    print(f"Chunk {i}:")
-    print(chunk)
-    print("-" * 50)
+    return full_text

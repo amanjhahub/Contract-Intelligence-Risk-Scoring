@@ -19,3 +19,10 @@ data/processed/
 
 # VS Code
 .vscode/
+# Generated vector database
+data/vector_store/*.pkl
+data/vector_store/*.index
+
+# Python cache
+__pycache__/
+*.pyc

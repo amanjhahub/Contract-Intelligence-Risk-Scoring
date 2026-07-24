@@ -1,3 +1,5 @@
+import os
+
 from llm.gemini_client import generate_answer
 
 from preprocessing.pdf_reader import extract_text
@@ -11,7 +13,14 @@ from embeddings.embedding_generator import (
 
 from vector_store.faiss_index import (
     build_index,
-    search_index
+    search_index,
+    save_index,
+    load_index
+)
+
+from vector_store.metadata_store import (
+    save_chunks,
+    load_chunks
 )
 
 
@@ -19,51 +28,119 @@ def main():
 
     pdf_path = "data/raw/contract.pdf"
 
-    print("Reading PDF...")
-    pages = extract_text(pdf_path)
+    index_path = "data/vector_store/contract.index"
+    chunks_path = "data/vector_store/chunks.pkl"
 
 
-    print("Cleaning text...")
+    # Step 1: Load existing vector store or create new one
 
-    for page in pages:
-        page["text"] = clean_text(page["text"])
+    if os.path.exists(index_path) and os.path.exists(chunks_path):
+
+        print("Loading existing vector store...")
+
+        index = load_index(index_path)
+
+        chunks = load_chunks(chunks_path)
 
 
-    print("Creating chunks...")
+    else:
 
-    chunks = chunk_text(
-        pages,
-        chunk_size=50,
-        overlap=10
+        print("Creating new vector store...")
+
+
+        # Step 2: Read PDF
+
+        print("Reading PDF...")
+        text = extract_text(pdf_path)
+
+
+        # Step 3: Clean text
+
+        print("Cleaning text...")
+
+        for page in text:
+            page["text"] = clean_text(
+                page["text"]
+            )
+
+        cleaned_pages = text
+
+        # Step 4: Create chunks
+
+        print("Creating chunks...")
+
+        chunks = chunk_text(
+            cleaned_pages,
+            chunk_size=50,
+            overlap=10
+        )
+
+
+        # Extract only text for embeddings
+
+        chunk_texts = []
+
+        for chunk in chunks:
+            chunk_texts.append(
+                chunk["text"]
+            )
+
+
+        # Step 5: Generate embeddings
+
+        print("Generating embeddings...")
+
+        embeddings = generate_embeddings(
+            chunk_texts
+        )
+
+
+        # Step 6: Build FAISS index
+
+        print("Building FAISS index...")
+
+        index = build_index(
+            embeddings
+        )
+
+
+        # Step 7: Save vector store
+
+        print("Saving vector store...")
+
+
+        save_index(
+            index,
+            index_path
+        )
+
+
+        save_chunks(
+            chunks,
+            chunks_path
+        )
+
+
+    print(
+        f"\nTotal Chunks Stored: {index.ntotal}"
     )
 
 
-    # Extract only text for embeddings
+    # Step 8: User query
 
-    chunk_texts = [
-        chunk["text"]
-        for chunk in chunks
-    ]
-
-
-    print("Generating embeddings...")
-
-    embeddings = generate_embeddings(chunk_texts)
+    query = input(
+        "\nAsk a question: "
+    )
 
 
-    print("Building FAISS index...")
+    # Step 9: Generate query embedding
 
-    index = build_index(embeddings)
-
-
-    print(f"\nTotal Chunks Stored: {index.ntotal}")
-
-
-    query = input("\nAsk a question: ")
+    query_embedding = model.encode(
+        [query]
+    )
 
 
-    query_embedding = model.encode([query])
-
+    # Step 10: Search FAISS
 
     distances, indices = search_index(
         index,
@@ -72,7 +149,7 @@ def main():
     )
 
 
-    # Prepare context for Gemini
+    # Step 11: Retrieve chunks
 
     retrieved_chunks = []
 
@@ -81,18 +158,23 @@ def main():
 
     for idx in indices[0]:
 
+        chunk = chunks[idx]
+
         retrieved_chunks.append(
-            chunks[idx]["text"]
+            chunk["text"]
         )
 
-        sources.append({
-            "page": chunks[idx]["page"],
-            "chunk_id": chunks[idx]["chunk_id"]
-        })
+        sources.append(
+            f"Page {chunk['page']}, Chunk {chunk['chunk_id']}"
+        )
 
 
-    context = "\n\n".join(retrieved_chunks)
+    context = "\n\n".join(
+        retrieved_chunks
+    )
 
+
+    # Step 12: Generate answer
 
     answer = generate_answer(
         context=context,
@@ -100,16 +182,18 @@ def main():
     )
 
 
+    # Step 13: Display result
+
     print("\nAnswer:\n")
+
     print(answer)
 
 
     print("\nSources:")
 
     for source in sources:
-        print(
-            f"Page {source['page']}, Chunk {source['chunk_id']}"
-        )
+        print(source)
+
 
 
 if __name__ == "__main__":

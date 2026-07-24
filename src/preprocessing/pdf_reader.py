@@ -3,15 +3,18 @@ import pdfplumber
 
 def extract_text(pdf_path):
 
-    full_text = ""
+    pages = []
 
     with pdfplumber.open(pdf_path) as pdf:
 
-        for page in pdf.pages:
+        for page_number, page in enumerate(pdf.pages, start=1):
 
             text = page.extract_text()
 
             if text:
-                full_text += text + "\n"
+                pages.append({
+                    "page": page_number,
+                    "text": text
+                })
 
-    return full_text
+    return pages

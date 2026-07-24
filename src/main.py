@@ -20,29 +20,50 @@ def main():
     pdf_path = "data/raw/contract.pdf"
 
     print("Reading PDF...")
-    text = extract_text(pdf_path)
+    pages = extract_text(pdf_path)
+
 
     print("Cleaning text...")
-    cleaned_text = clean_text(text)
+
+    for page in pages:
+        page["text"] = clean_text(page["text"])
+
 
     print("Creating chunks...")
+
     chunks = chunk_text(
-        cleaned_text,
+        pages,
         chunk_size=50,
         overlap=10
     )
 
+
+    # Extract only text for embeddings
+
+    chunk_texts = [
+        chunk["text"]
+        for chunk in chunks
+    ]
+
+
     print("Generating embeddings...")
-    embeddings = generate_embeddings(chunks)
+
+    embeddings = generate_embeddings(chunk_texts)
+
 
     print("Building FAISS index...")
+
     index = build_index(embeddings)
+
 
     print(f"\nTotal Chunks Stored: {index.ntotal}")
 
+
     query = input("\nAsk a question: ")
 
+
     query_embedding = model.encode([query])
+
 
     distances, indices = search_index(
         index,
@@ -51,17 +72,27 @@ def main():
     )
 
 
-    # Step 9: Prepare Context for Gemini
+    # Prepare context for Gemini
 
     retrieved_chunks = []
 
+    sources = []
+
+
     for idx in indices[0]:
-        retrieved_chunks.append(chunks[idx])
+
+        retrieved_chunks.append(
+            chunks[idx]["text"]
+        )
+
+        sources.append({
+            "page": chunks[idx]["page"],
+            "chunk_id": chunks[idx]["chunk_id"]
+        })
+
 
     context = "\n\n".join(retrieved_chunks)
 
-
-    # Step 10: Generate Answer using Gemini
 
     answer = generate_answer(
         context=context,
@@ -69,11 +100,16 @@ def main():
     )
 
 
-    # Step 11: Display Answer
-
     print("\nAnswer:\n")
     print(answer)
 
+
+    print("\nSources:")
+
+    for source in sources:
+        print(
+            f"Page {source['page']}, Chunk {source['chunk_id']}"
+        )
 
 
 if __name__ == "__main__":

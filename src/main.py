@@ -180,6 +180,11 @@ def main():
         context=context,
         question=query
     )
+    not_found_message = "I could not find the answer in the provided document."
+
+    if not_found_message in answer:
+
+     sources = []
 
 
     # Step 13: Display result
@@ -189,11 +194,12 @@ def main():
     print(answer)
 
 
-    print("\nSources:")
+    if sources:
+
+     print("\nSources:")
 
     for source in sources:
         print(source)
-
 
 
 if __name__ == "__main__":

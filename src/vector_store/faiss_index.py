@@ -17,7 +17,7 @@ def build_index(embeddings):
 
 
 
-def search_index(index, query_embedding, k=1):
+def search_index(index, query_embedding, k=3, threshold=2.0):
 
     query_embedding = np.array(query_embedding).astype("float32")
 
@@ -26,8 +26,21 @@ def search_index(index, query_embedding, k=1):
         k
     )
 
-    return distances, indices
+   
 
+    filtered_indices = []
+    filtered_distances = []
+
+    for distance, idx in zip(distances[0], indices[0]):
+
+        if distance <= threshold:
+            filtered_indices.append(idx)
+            filtered_distances.append(distance)
+
+    return (
+        np.array([filtered_distances]),
+        np.array([filtered_indices])
+    )
 
 
 def save_index(index, path):

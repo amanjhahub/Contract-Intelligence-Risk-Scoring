@@ -275,6 +275,10 @@ def main():
 
 
 
-if __name__ == "__main__":
+def run_single_contract():
 
     main()
+
+
+if __name__ == "__main__":
+    run_single_contract()

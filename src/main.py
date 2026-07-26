@@ -1,5 +1,6 @@
 import os
 
+from recommendations.recommendation_engine import generate_recommendations
 from risk.risk_analyzer import analyze_risk
 from llm.gemini_client import generate_answer
 
@@ -32,13 +33,15 @@ def main():
     index_path = "data/vector_store/contract.index"
     chunks_path = "data/vector_store/chunks.pkl"
 
+
     # -------------------------------------------------
-    # Read PDF (Always)
+    # Read PDF
     # -------------------------------------------------
 
     print("Reading PDF...")
 
     pages = extract_text(pdf_path)
+
 
     # -------------------------------------------------
     # Risk Analysis
@@ -52,10 +55,16 @@ def main():
 
             contract_text += page["text"] + "\n"
 
+
     risk_report = analyze_risk(contract_text)
 
+    recommendations = generate_recommendations(
+        risk_report
+    )
+
+
     # -------------------------------------------------
-    # Load existing vector store OR create one
+    # Load existing vector store OR create new one
     # -------------------------------------------------
 
     if os.path.exists(index_path) and os.path.exists(chunks_path):
@@ -65,6 +74,7 @@ def main():
         index = load_index(index_path)
 
         chunks = load_chunks(chunks_path)
+
 
     else:
 
@@ -78,6 +88,7 @@ def main():
                 page["text"]
             )
 
+
         print("Creating chunks...")
 
         chunks = chunk_text(
@@ -85,6 +96,7 @@ def main():
             chunk_size=50,
             overlap=10
         )
+
 
         chunk_texts = []
 
@@ -94,31 +106,41 @@ def main():
                 chunk["text"]
             )
 
+
         print("Generating embeddings...")
 
         embeddings = generate_embeddings(
             chunk_texts
         )
 
+
         print("Building FAISS index...")
+
 
         index = build_index(
             embeddings
         )
 
+
         print("Saving vector store...")
+
 
         save_index(
             index,
             index_path
         )
 
+
         save_chunks(
             chunks,
             chunks_path
         )
 
-    print(f"\nTotal Chunks Stored: {index.ntotal}")
+
+    print(
+        f"\nTotal Chunks Stored: {index.ntotal}"
+    )
+
 
     # -------------------------------------------------
     # Display Risk Report
@@ -128,8 +150,15 @@ def main():
     print("Contract Risk Report")
     print("==============================")
 
-    print(f"Risk Score : {risk_report['risk_score']}")
-    print(f"Risk Level : {risk_report['risk_level']}")
+
+    print(
+        f"Risk Score : {risk_report['risk_score']}"
+    )
+
+    print(
+        f"Risk Level : {risk_report['risk_level']}"
+    )
+
 
     print("\nPresent Clauses")
 
@@ -139,6 +168,7 @@ def main():
             f"✓ {clause['clause']} ({clause['severity']})"
         )
 
+
     print("\nMissing Clauses")
 
     for clause in risk_report["missing"]:
@@ -147,13 +177,42 @@ def main():
             f"✗ {clause['clause']} ({clause['severity']})"
         )
 
+
+    # -------------------------------------------------
+    # Display Recommendations
+    # -------------------------------------------------
+
+    print("\n==============================")
+    print("Contract Recommendations")
+    print("==============================")
+
+
+    for item in recommendations:
+
+        print(
+            f"{item['priority']} : {item['clause']}"
+        )
+
+        print(
+            item["message"]
+        )
+
+        print()
+
+
     # -------------------------------------------------
     # Ask Question
     # -------------------------------------------------
 
-    query = input("\nAsk a question: ")
+    query = input(
+        "\nAsk a question: "
+    )
 
-    query_embedding = model.encode([query])
+
+    query_embedding = model.encode(
+        [query]
+    )
+
 
     distances, indices = search_index(
         index,
@@ -161,9 +220,11 @@ def main():
         k=3
     )
 
+
     retrieved_chunks = []
 
     sources = []
+
 
     for idx in indices[0]:
 
@@ -177,22 +238,32 @@ def main():
             f"Page {chunk['page']}, Chunk {chunk['chunk_id']}"
         )
 
-    context = "\n\n".join(retrieved_chunks)
+
+    context = "\n\n".join(
+        retrieved_chunks
+    )
+
 
     answer = generate_answer(
         context=context,
         question=query
     )
 
-    not_found = "I could not find the answer in the provided document."
+
+    not_found = (
+        "I could not find the answer in the provided document."
+    )
+
 
     if not_found.lower() in answer.lower():
 
         sources = []
 
+
     print("\nAnswer:\n")
 
     print(answer)
+
 
     if sources:
 
@@ -203,5 +274,7 @@ def main():
             print(source)
 
 
+
 if __name__ == "__main__":
+
     main()

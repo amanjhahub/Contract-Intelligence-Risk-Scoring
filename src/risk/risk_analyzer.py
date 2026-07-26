@@ -1,5 +1,4 @@
-from src.risk.risk_rules import REQUIRED_CLAUSES
-
+from risk.risk_rules import REQUIRED_CLAUSES
 
 SEVERITY_WEIGHTS = {
     "High": 20,

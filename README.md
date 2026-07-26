@@ -1,135 +1,408 @@
-# 📄 Contract Intelligence & Risk Scoring System
+# AI-Powered Contract Intelligence & Risk Scoring Platform
 
-An AI-powered contract analysis system that analyzes legal contracts, identifies risks, compares multiple contracts, generates summaries, and answers questions using Retrieval-Augmented Generation (RAG).
-
----
-
-## 🚀 Features
-
-- 📄 PDF Contract Processing
-- ⚠️ Risk Analysis with Weighted Scoring
-- 📊 Risk Level Classification (Low / Medium / High)
-- 📝 Clause Detection
-- 💡 Contract Recommendations
-- 🤖 AI-powered Contract Summarization (Google Gemini)
-- 🔍 RAG-based Question Answering
-- 📚 FAISS Vector Search
-- 📑 Compare Two Contracts
-- 🖥️ Interactive Menu-driven CLI
+An NLP-based legal contract analysis system that automatically processes contracts, extracts important clauses, identifies risks, generates summaries, compares multiple contracts, and provides intelligent question answering using Retrieval-Augmented Generation (RAG).
 
 ---
 
-## 🛠️ Tech Stack
+# 🚀 Features
+
+## 1. Contract Risk Analysis
+
+- Upload PDF contracts
+- Extract contract text automatically
+- Detect important legal clauses:
+  - Payment
+  - Termination
+  - Confidentiality
+  - Liability
+  - Dispute Resolution
+  - Governing Law
+- Generate risk score
+- Identify missing clauses
+- Provide recommendations
+
+---
+
+## 2. AI Contract Summarization
+
+Automatically generates structured summaries containing:
+
+- Contract Title
+- Parties
+- Purpose
+- Payment Terms
+- Termination Conditions
+- Liability Information
+- Confidentiality Details
+- Dispute Resolution
+- Governing Law
+- Important Risks
+
+---
+
+## 3. Contract Comparison
+
+Compare two contracts and identify:
+
+- Risk score difference
+- Missing clauses
+- Additional clauses
+- Safer contract recommendation
+
+Example:
+
+
+Contract A Risk Score : 75
+Contract B Risk Score : 100
+
+Recommendation:
+Contract B is safer.
+
+
+---
+
+## 4. AI Contract Question Answering (RAG)
+
+Ask questions about uploaded contracts.
+
+Example:
+
+
+Question:
+What clauses are present in this contract?
+
+Answer:
+Confidentiality,
+Dispute Resolution,
+Governing Law,
+Payment Terms,
+Termination,
+Liability
+
+Sources:
+Page 1, Chunk 1
+Page 1, Chunk 2
+
+
+---
+
+# 🏗️ System Architecture
+
+             Contract PDF
+                  |
+                  ↓
+          PDF Text Extraction
+                  |
+                  ↓
+          Text Cleaning
+                  |
+    ┌─────────────┼─────────────┐
+    ↓             ↓             ↓
+
+Risk Analyzer Summarizer Comparator
+| | |
+↓ ↓ ↓
+Risk Report AI Summary Comparison Report
+
+                  |
+                  ↓
+
+         Document Embeddings
+                  |
+                  ↓
+             FAISS Vector DB
+                  |
+                  ↓
+                RAG
+                  |
+                  ↓
+          Gemini LLM Response
+
+---
+
+# 🛠️ Tech Stack
+
+## Programming Language
 
 - Python
-- Google Gemini API
+
+## NLP & AI
+
+- Hugging Face Transformers
 - Sentence Transformers
+- Google Gemini API
+- Retrieval-Augmented Generation (RAG)
+
+## Document Processing
+
+- PyMuPDF
+- PDF Text Extraction
+- Text Chunking
+
+## Vector Database
+
 - FAISS
-- Hugging Face
-- PyPDF2
-- NumPy
+
+## Backend
+
+- FastAPI
+- Uvicorn
+- Pydantic
+
+## Development Tools
+
+- Git
+- GitHub
+- VS Code
+- Postman / Swagger UI
 
 ---
 
-## 📂 Project Structure
+# 📂 Project Structure
 
-```
-src/
+```text
+Contract-Intelligence-Risk-Scoring
+
+├── src
+│   ├── api
+│   │   └── main.py
+│   │
+│   ├── preprocessing
+│   │   ├── pdf_reader.py
+│   │   ├── text_cleaner.py
+│   │   └── text_chunker.py
+│   │
+│   ├── risk
+│   │   ├── risk_analyzer.py
+│   │   └── risk_rules.py
+│   │
+│   ├── summarizer
+│   │   └── contract_summarizer.py
+│   │
+│   ├── comparison
+│   │   ├── contract_comparator.py
+│   │   └── run_comparison.py
+│   │
+│   ├── rag
+│   │   └── chat_service.py
+│   │
+│   ├── embeddings
+│   │
+│   ├── vector_store
+│   │
+│   └── llm
+│       └── gemini_client.py
 │
-├── app/
-├── preprocessing/
-├── embeddings/
-├── vector_store/
-├── llm/
-├── risk/
-├── recommendations/
-├── comparison/
-├── summarizer/
-└── main.py
+├── data
+│   └── raw
+│
+├── requirements.txt
+│
+└── README.md
 ```
 
 ---
 
-## ⚙️ Installation
+# ⚙️ Installation
+
+## 1. Clone Repository
 
 ```bash
 git clone <repository-url>
 
 cd Contract-Intelligence-Risk-Scoring
+```
+
+## 2. Create Environment
+Using Conda:
+
+```bash
+conda create -n ai python=3.12
 
 conda activate ai
+```
 
+## 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
----
+## 4. Configure Environment Variables
 
-## ▶️ Run Application
+Create `.env`
+
+```env
+GEMINI_API_KEY=your_api_key
+```
+# ▶️ Running the Application
+
+## Run CLI Version
 
 ```bash
 export PYTHONPATH=src
 
-python src/app/main_menu.py
+python src/main.py
 ```
 
----
+## Run FastAPI Server
 
-## 📌 Menu
+```bash
+export PYTHONPATH=src
 
-```
-1. Analyze Single Contract
-2. Compare Two Contracts
-3. Generate Summary
-4. Exit
+uvicorn api.main:app --reload
 ```
 
----
+### Server
 
-## 📊 Features Demonstrated
+```
+http://127.0.0.1:8000
+```
 
-### Risk Analysis
-- Detects important legal clauses
-- Weighted severity scoring
-- Risk level prediction
+### Swagger Documentation
 
-### Contract Comparison
-- Compares two contracts
-- Shows missing clauses
-- Suggests safer contract
+```
+http://127.0.0.1:8000/docs
+```
+# 🔌 API Endpoints
+Health Check
+GET /health
 
-### Contract Summary
-- Title
-- Parties
-- Payment Terms
-- Termination
-- Liability
-- Confidentiality
-- Governing Law
+Response:
 
-### RAG Question Answering
+```json
+{
+ "status":"healthy",
+ "service":"Contract Intelligence API"
+}
+```
+Analyze Contract
+POST /analyze
 
-Ask questions such as:
+Input:
 
-- What are the payment terms?
-- What clauses are present?
-- Who are the parties?
-- What is the governing law?
+PDF File
 
----
+Output:
 
-## 🔮 Future Improvements
+```json
+{
+  "risk_score": 100,
+  "risk_level": "Low",
+  "present_clauses": [],
+  "missing_clauses": []
+}
+```
+Generate Summary
+POST /summary
 
-- Web Interface (FastAPI + React)
-- Clause Extraction using LLMs
-- Risk Heatmaps
-- Multi-document Search
-- Contract Version Tracking
-- OCR Support
-- Docker Deployment
+Input:
 
----
+PDF File
 
-## 👨‍💻 Author
+Output:
+
+```json
+{
+  "summary": "Contract summary..."
+}
+```
+Compare Contracts
+POST /compare
+
+Input:
+
+Contract A PDF
+Contract B PDF
+
+Output:
+
+
+```json
+{
+  "contract_a_score": 75,
+  "contract_b_score": 100,
+  "recommendation": "Contract B"
+}
+```
+Ask Questions
+POST /ask
+
+Example:
+
+
+```json
+{
+  "question": "What clauses are present?"
+}
+```
+
+Response:
+
+```json
+{
+  "answer": "...",
+  "sources": [
+    "Page 1, Chunk 1"
+  ]
+}
+```
+# 📸 Demo
+
+## Contract Risk Analysis
+
+Upload a contract PDF and the system:
+
+- Extracts contract text
+- Detects important clauses
+- Generates risk score
+- Identifies missing clauses
+- Provides recommendations
+
+
+## AI Contract Question Answering (RAG)
+
+Ask questions about the contract and get:
+
+- AI-generated answers
+- Relevant document sources
+- Context-based retrieval using FAISS
+
+Example:
+
+Question:
+```
+What clauses are present in this contract?
+```
+
+Response:
+```
+Confidentiality
+Dispute Resolution
+Governing Law
+Payment Terms
+Termination
+Liability
+```
+## 📊 Future Improvements
+
+- Fine-tune Legal BERT/RoBERTa models
+- CUAD dataset integration
+- OCR support for scanned contracts
+- Docker deployment
+- AWS deployment
+- React dashboard
+- User authentication
+- Multi-contract search
+
+🎯 Project Impact
+
+This platform reduces manual contract review time by automatically identifying important legal clauses, highlighting risks, and assisting compliance teams with AI-powered contract intelligence.
+
+👨‍💻 Author
 
 Aman Jha
-B.Tech CSE (2023–2027)
+
+B.Tech Computer Science Engineering
+
+AI/ML Engineer | Python Developer | FastAPI | NLP | MERN Stack

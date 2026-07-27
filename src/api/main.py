@@ -1,4 +1,6 @@
 
+from html import entities
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from typing import List
@@ -9,6 +11,8 @@ from summarizer.contract_summarizer import summarize_contract
 from preprocessing.pdf_reader import extract_text
 from risk.risk_analyzer import analyze_risk
 from rag.chat_service import ask_contract
+from ner.entity_extractor import extract_entities
+from ner.legal_mapper import map_legal_entities
 
 class RiskResponse(BaseModel):
 
@@ -16,7 +20,7 @@ class RiskResponse(BaseModel):
     risk_level: str
     present_clauses: list
     missing_clauses: list
-
+    entities: list
 
 
 class SummaryResponse(BaseModel):
@@ -88,6 +92,13 @@ async def analyze_contract(
     report = analyze_risk(
         contract_text
     )
+    entities = extract_entities(
+     contract_text
+)
+
+    legal_entities = map_legal_entities(
+    entities
+)
 
 
     return {
@@ -98,7 +109,8 @@ async def analyze_contract(
 
         "present_clauses": report["present"],
 
-        "missing_clauses": report["missing"]
+        "missing_clauses": report["missing"],
+       "entities": legal_entities
 
     }
 

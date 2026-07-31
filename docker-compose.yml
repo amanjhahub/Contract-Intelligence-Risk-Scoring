@@ -1,0 +1,28 @@
+services:
+
+  api:
+    build: .
+    container_name: contract-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app/src
+    depends_on:
+      - redis
+
+
+  worker:
+    build: .
+    container_name: contract-worker
+    command: celery -A tasks.celery_app worker --loglevel=info
+    environment:
+      - PYTHONPATH=/app/src
+    depends_on:
+      - redis
+
+
+  redis:
+    image: redis:latest
+    container_name: contract-redis
+    ports:
+      - "6379:6379"

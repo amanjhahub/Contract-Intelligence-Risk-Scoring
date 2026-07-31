@@ -1,31 +1,38 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 
-# Conda
+# Conda / Environment
 .env
+.conda/
+venv/
+env/
 
 # Jupyter
 .ipynb_checkpoints/
 
-# Models (large files)
-models/*.bin
-models/*.pt
-models/*.pth
+# IDE
+.vscode/
+.idea/
 
-# Data
+# User uploaded contracts
 data/raw/
+
+# CUAD training dataset (large)
+data/cuad/
+data/*cuad*.csv
+data/train_cuad.csv
+data/test_cuad.csv
+
+# Temporary processed files
 data/processed/
 
-# VS Code
-.vscode/
-# Generated vector database
-data/vector_store/*.pkl
-data/vector_store/*.index
+# Logs
+*.log
 
-# Python cache
-__pycache__/
-*.pyc
-# Ignore complete ML data and model folders
-data/
-models/
+# OS files
+.DS_Store
+
+# Training checkpoints
+models/**/checkpoint-*/
+*.pt

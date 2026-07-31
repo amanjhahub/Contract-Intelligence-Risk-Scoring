@@ -1,5 +1,4 @@
 
-from html import entities
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
@@ -13,6 +12,10 @@ from risk.risk_analyzer import analyze_risk
 from rag.chat_service import ask_contract
 from ner.entity_extractor import extract_entities
 from ner.legal_mapper import map_legal_entities
+
+from tasks.contract_tasks import analyze_contract_task
+from tasks.celery_app import celery_app
+from celery.result import AsyncResult
 
 class RiskResponse(BaseModel):
 
@@ -270,6 +273,60 @@ async def ask_question(
 
     return response
 
+@app.post("/analyze/async")
+async def analyze_contract_async(
+    file: UploadFile = File(...)
+):
+
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF files are supported"
+        )
+
+    file_path = f"data/raw/{file.filename}"
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    task = analyze_contract_task.delay(file_path)
+
+    return {
+        "task_id": task.id,
+        "status": "Processing"
+    }
+
+
+@app.get("/tasks/{task_id}")
+async def get_task_status(task_id: str):
+
+    task = AsyncResult(task_id, app=celery_app)
+
+    if task.state == "PENDING":
+        return {
+            "status": "PENDING"
+        }
+
+    elif task.state == "STARTED":
+        return {
+            "status": "STARTED"
+        }
+
+    elif task.state == "SUCCESS":
+        return {
+            "status": "SUCCESS",
+            "result": task.result
+        }
+
+    elif task.state == "FAILURE":
+        return {
+            "status": "FAILURE",
+            "error": str(task.result)
+        }
+
+    return {
+        "status": task.state
+    }
 
 @app.get("/health")
 def health_check():

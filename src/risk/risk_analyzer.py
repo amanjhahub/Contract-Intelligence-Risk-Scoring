@@ -1,3 +1,4 @@
+from risk.post_processor import process_predictions
 from risk.risk_rules import REQUIRED_CLAUSES
 
 SEVERITY_WEIGHTS = {
@@ -29,10 +30,11 @@ def analyze_risk(text):
 
         if found:
 
-            present.append({
-                "clause": clause,
-                "severity": severity
-            })
+             present.append({
+        "clause": clause,
+        "severity": severity,
+        "confidence": 0.95
+    })
 
         else:
 
@@ -62,6 +64,7 @@ def analyze_risk(text):
     else:
         level = "High"
 
+    present = process_predictions(present)
     return {
         "risk_score": score,
         "risk_level": level,

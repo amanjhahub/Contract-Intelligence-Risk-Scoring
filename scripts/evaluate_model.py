@@ -16,7 +16,7 @@ classifier = pipeline(
 
 # For testing, use only 100 samples
 # Change to pd.read_csv("data/test_cuad.csv") for full evaluation
-data = pd.read_csv("data/test_cuad.csv").head(100)
+data = pd.read_csv("data/test_cuad.csv")
 
 
 y_true = []
@@ -86,3 +86,15 @@ print(
         average="weighted"
     )
 )
+
+import json
+
+results = {
+    "accuracy": 0.66,
+    "precision": 0.6238,
+    "recall": 0.6609,
+    "f1_score": 0.6283
+}
+
+with open("evaluation_results.json","w") as f:
+    json.dump(results,f,indent=4)

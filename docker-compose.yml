@@ -7,9 +7,10 @@ services:
       - "8000:8000"
     environment:
       - PYTHONPATH=/app/src
+    volumes:
+      - ./data:/app/data
     depends_on:
       - redis
-
 
   worker:
     build: .
@@ -17,9 +18,10 @@ services:
     command: celery -A tasks.celery_app worker --loglevel=info
     environment:
       - PYTHONPATH=/app/src
+    volumes:
+      - ./data:/app/data
     depends_on:
       - redis
-
 
   redis:
     image: redis:latest

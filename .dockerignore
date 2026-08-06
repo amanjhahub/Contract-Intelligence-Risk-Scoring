@@ -8,3 +8,9 @@ data/raw
 notebooks
 
 *.zip
+
+.git/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.env

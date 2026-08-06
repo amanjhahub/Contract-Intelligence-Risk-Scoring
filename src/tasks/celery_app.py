@@ -2,9 +2,9 @@ from celery import Celery
 
 celery_app = Celery(
     "contract_intelligence",
-    broker="redis://localhost:6379/0",
-    backend="redis://localhost:6379/0",
-    include=["tasks.contract_tasks"]   # <-- Add this
+    broker="redis://redis:6379/0",
+    backend="redis://redis:6379/0",
+    include=["tasks.contract_tasks"],
 )
 
 celery_app.conf.update(

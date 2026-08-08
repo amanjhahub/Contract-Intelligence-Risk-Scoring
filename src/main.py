@@ -25,254 +25,275 @@ from vector_store.metadata_store import (
     load_chunks
 )
 
+from utils.logger import logger
+
 
 def main():
 
-    pdf_path = "data/raw/contract.pdf"
+    try:
 
-    index_path = "data/vector_store/contract.index"
-    chunks_path = "data/vector_store/chunks.pkl"
+        logger.info("========== Contract Intelligence Pipeline Started ==========")
 
+        pdf_path = "data/raw/contract.pdf"
 
-    # -------------------------------------------------
-    # Read PDF
-    # -------------------------------------------------
+        index_path = "data/vector_store/contract.index"
+        chunks_path = "data/vector_store/chunks.pkl"
 
-    print("Reading PDF...")
+        # -------------------------------------------------
+        # Read PDF
+        # -------------------------------------------------
 
-    pages = extract_text(pdf_path)
+        print("Reading PDF...")
+        logger.info("Reading PDF...")
 
+        pages = extract_text(pdf_path)
 
-    # -------------------------------------------------
-    # Risk Analysis
-    # -------------------------------------------------
+        logger.info(f"Extracted {len(pages)} pages.")
 
-    contract_text = ""
+        # -------------------------------------------------
+        # Risk Analysis
+        # -------------------------------------------------
 
-    for page in pages:
+        logger.info("Running risk analysis...")
 
-        if page["text"]:
-
-            contract_text += page["text"] + "\n"
-
-
-    risk_report = analyze_risk(contract_text)
-
-    recommendations = generate_recommendations(
-        risk_report
-    )
-
-
-    # -------------------------------------------------
-    # Load existing vector store OR create new one
-    # -------------------------------------------------
-
-    if os.path.exists(index_path) and os.path.exists(chunks_path):
-
-        print("Loading existing vector store...")
-
-        index = load_index(index_path)
-
-        chunks = load_chunks(chunks_path)
-
-
-    else:
-
-        print("Creating new vector store...")
-
-        print("Cleaning text...")
+        contract_text = ""
 
         for page in pages:
 
-            page["text"] = clean_text(
-                page["text"]
+            if page["text"]:
+
+                contract_text += page["text"] + "\n"
+
+        risk_report = analyze_risk(contract_text)
+
+        recommendations = generate_recommendations(
+            risk_report
+        )
+
+        logger.info(
+            f"Risk Score: {risk_report['risk_score']} | Risk Level: {risk_report['risk_level']}"
+        )
+
+        # -------------------------------------------------
+        # Load existing vector store OR create new one
+        # -------------------------------------------------
+
+        if os.path.exists(index_path) and os.path.exists(chunks_path):
+
+            print("Loading existing vector store...")
+            logger.info("Loading existing FAISS vector store...")
+
+            index = load_index(index_path)
+
+            chunks = load_chunks(chunks_path)
+
+           
+
+        else:
+
+            print("Creating new vector store...")
+            logger.info("Creating new vector store...")
+
+            print("Cleaning text...")
+            logger.info("Cleaning extracted text...")
+
+            for page in pages:
+
+                page["text"] = clean_text(
+                    page["text"]
+                )
+
+            print("Creating chunks...")
+            logger.info("Creating chunks...")
+
+            chunks = chunk_text(
+                pages,
+                chunk_size=50,
+                overlap=10
             )
 
+            logger.info(f"Created {len(chunks)} chunks.")
 
-        print("Creating chunks...")
+            chunk_texts = []
 
-        chunks = chunk_text(
-            pages,
-            chunk_size=50,
-            overlap=10
-        )
+            for chunk in chunks:
 
+                chunk_texts.append(
+                    chunk["text"]
+                )
 
-        chunk_texts = []
+            print("Generating embeddings...")
+            logger.info("Generating embeddings...")
 
-        for chunk in chunks:
-
-            chunk_texts.append(
-                chunk["text"]
+            embeddings = generate_embeddings(
+                chunk_texts
             )
 
+            logger.info(
+                f"Generated {len(embeddings)} embeddings."
+            )
 
-        print("Generating embeddings...")
+            print("Building FAISS index...")
+            logger.info("Building FAISS index...")
 
-        embeddings = generate_embeddings(
-            chunk_texts
+            index = build_index(
+                embeddings
+            )
+
+            logger.info(
+                f"FAISS index built with {index.ntotal} vectors."
+            )
+
+            print("Saving vector store...")
+            logger.info("Saving FAISS vector store...")
+
+            save_index(
+                index,
+                index_path
+            )
+
+            save_chunks(
+                chunks,
+                chunks_path
+            )
+
+            logger.info("Vector store saved successfully.")
+
+        print(f"\nTotal Chunks Stored: {index.ntotal}")
+
+        logger.info(
+            f"Total chunks stored: {index.ntotal}"
         )
 
+        # -------------------------------------------------
+        # Display Risk Report
+        # -------------------------------------------------
 
-        print("Building FAISS index...")
+        print("\n==============================")
+        print("Contract Risk Report")
+        print("==============================")
 
+        print(f"Risk Score : {risk_report['risk_score']}")
+        print(f"Risk Level : {risk_report['risk_level']}")
 
-        index = build_index(
-            embeddings
+        print("\nPresent Clauses")
+
+        for clause in risk_report["present"]:
+
+            print(
+                f"✓ {clause['clause']} ({clause['severity']})"
+            )
+
+        print("\nMissing Clauses")
+
+        for clause in risk_report["missing"]:
+
+            print(
+                f"✗ {clause['clause']} ({clause['severity']})"
+            )
+
+        # -------------------------------------------------
+        # Recommendations
+        # -------------------------------------------------
+
+        print("\n==============================")
+        print("Contract Recommendations")
+        print("==============================")
+
+        for item in recommendations:
+
+            print(
+                f"{item['priority']} : {item['clause']}"
+            )
+
+            print(
+                item["message"]
+            )
+
+            print()
+
+        # -------------------------------------------------
+        # Question Answering
+        # -------------------------------------------------
+
+        logger.info("Waiting for user query...")
+
+        query = input("\nAsk a question: ")
+
+        logger.info(f"User Query: {query}")
+
+        query_embedding = model.encode(
+            [query]
         )
 
+        
 
-        print("Saving vector store...")
-
-
-        save_index(
+        distances, indices = search_index(
             index,
-            index_path
+            query_embedding,
+            k=3
         )
 
-
-        save_chunks(
-            chunks,
-            chunks_path
+        logger.info(
+            f"Retrieved {len(indices[0])} candidate chunks."
         )
 
-
-    print(
-        f"\nTotal Chunks Stored: {index.ntotal}"
-    )
-
-
-    # -------------------------------------------------
-    # Display Risk Report
-    # -------------------------------------------------
-
-    print("\n==============================")
-    print("Contract Risk Report")
-    print("==============================")
-
-
-    print(
-        f"Risk Score : {risk_report['risk_score']}"
-    )
-
-    print(
-        f"Risk Level : {risk_report['risk_level']}"
-    )
-
-
-    print("\nPresent Clauses")
-
-    for clause in risk_report["present"]:
-
-        print(
-            f"✓ {clause['clause']} ({clause['severity']})"
-        )
-
-
-    print("\nMissing Clauses")
-
-    for clause in risk_report["missing"]:
-
-        print(
-            f"✗ {clause['clause']} ({clause['severity']})"
-        )
-
-
-    # -------------------------------------------------
-    # Display Recommendations
-    # -------------------------------------------------
-
-    print("\n==============================")
-    print("Contract Recommendations")
-    print("==============================")
-
-
-    for item in recommendations:
-
-        print(
-            f"{item['priority']} : {item['clause']}"
-        )
-
-        print(
-            item["message"]
-        )
-
-        print()
-
-
-    # -------------------------------------------------
-    # Ask Question
-    # -------------------------------------------------
-
-    query = input(
-        "\nAsk a question: "
-    )
-
-
-    query_embedding = model.encode(
-        [query]
-    )
-
-
-    distances, indices = search_index(
-        index,
-        query_embedding,
-        k=3
-    )
-
-
-    retrieved_chunks = []
-
-    sources = []
-
-
-    for idx in indices[0]:
-
-        chunk = chunks[idx]
-
-        retrieved_chunks.append(
-            chunk["text"]
-        )
-
-        sources.append(
-            f"Page {chunk['page']}, Chunk {chunk['chunk_id']}"
-        )
-
-
-    context = "\n\n".join(
-        retrieved_chunks
-    )
-
-
-    answer = generate_answer(
-        context=context,
-        question=query
-    )
-
-
-    not_found = (
-        "I could not find the answer in the provided document."
-    )
-
-
-    if not_found.lower() in answer.lower():
+        retrieved_chunks = []
 
         sources = []
 
+        for idx in indices[0]:
 
-    print("\nAnswer:\n")
+            chunk = chunks[idx]
 
-    print(answer)
+            retrieved_chunks.append(
+                chunk["text"]
+            )
 
+            sources.append(
+                f"Page {chunk['page']}, Chunk {chunk['chunk_id']}"
+            )
 
-    if sources:
+        context = "\n\n".join(
+            retrieved_chunks
+        )
 
-        print("\nSources:")
+        logger.info("Generating answer using Gemini...")
 
-        for source in sources:
+        answer = generate_answer(
+            context=context,
+            question=query
+        )
 
-            print(source)
+        logger.info("Answer generated successfully.")
 
+        not_found = (
+            "I could not find the answer in the provided document."
+        )
+
+        if not_found.lower() in answer.lower():
+
+            sources = []
+
+        print("\nAnswer:\n")
+
+        print(answer)
+
+        if sources:
+
+            print("\nSources:")
+
+            for source in sources:
+
+                print(source)
+
+        logger.info("========== Pipeline Completed Successfully ==========")
+
+    except Exception as e:
+
+        logger.exception(f"Pipeline failed: {e}")
+
+        raise
 
 
 def run_single_contract():
@@ -281,4 +302,5 @@ def run_single_contract():
 
 
 if __name__ == "__main__":
+
     run_single_contract()

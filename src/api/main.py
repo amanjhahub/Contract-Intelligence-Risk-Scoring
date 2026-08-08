@@ -1,5 +1,5 @@
-
-
+from recommendations.recommendation_engine import generate_recommendations
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from typing import List
@@ -16,7 +16,7 @@ from ner.legal_mapper import map_legal_entities
 from tasks.contract_tasks import analyze_contract_task
 from tasks.celery_app import celery_app
 from celery.result import AsyncResult
-
+from utils.logger import logger
 class RiskResponse(BaseModel):
 
     risk_score: int
@@ -24,7 +24,7 @@ class RiskResponse(BaseModel):
     present_clauses: list
     missing_clauses: list
     entities: list
-
+    recommendations: list
 
 class SummaryResponse(BaseModel):
 
@@ -43,6 +43,15 @@ class CompareResponse(BaseModel):
 app = FastAPI(
     title="Contract Intelligence API",
     version="1.0.0"
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -93,10 +102,15 @@ async def analyze_contract(
 
 
     report = analyze_risk(
-        contract_text
-    )
+    contract_text
+)
+
+    recommendations = generate_recommendations(
+    report
+)
+
     entities = extract_entities(
-     contract_text
+    contract_text
 )
 
     legal_entities = map_legal_entities(
@@ -113,8 +127,8 @@ async def analyze_contract(
         "present_clauses": report["present"],
 
         "missing_clauses": report["missing"],
-       "entities": legal_entities
-
+       "entities": legal_entities,
+       "recommendations": recommendations
     }
 
 @app.post(

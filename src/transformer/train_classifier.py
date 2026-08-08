@@ -1,5 +1,7 @@
-import torch
+import json
+import numpy as np
 import pandas as pd
+import torch
 
 from transformers import (
     AutoTokenizer,
@@ -9,6 +11,11 @@ from transformers import (
 )
 
 from datasets import Dataset
+
+from sklearn.metrics import (
+    accuracy_score,
+    precision_recall_fscore_support
+)
 
 
 MODEL_NAME = "distilroberta-base"
@@ -25,7 +32,6 @@ def load_data():
     )
 
     return train_df, test_df
-
 
 
 def tokenize_data(dataset, tokenizer):
@@ -47,18 +53,44 @@ def tokenize_data(dataset, tokenizer):
             max_length=256
         )
 
-
     return dataset.map(
         tokenize,
         batched=True
     )
 
 
+def compute_metrics(eval_pred):
+
+    logits, labels = eval_pred
+
+    predictions = np.argmax(
+        logits,
+        axis=-1
+    )
+
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        labels,
+        predictions,
+        average="binary",
+        zero_division=0
+    )
+
+    accuracy = accuracy_score(
+        labels,
+        predictions
+    )
+
+    return {
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1
+    }
+
 
 def main():
 
     train_df, test_df = load_data()
-
 
     train_dataset = Dataset.from_pandas(
         train_df
@@ -68,11 +100,9 @@ def main():
         test_df
     )
 
-
     tokenizer = AutoTokenizer.from_pretrained(
         MODEL_NAME
     )
-
 
     train_dataset = tokenize_data(
         train_dataset,
@@ -84,7 +114,6 @@ def main():
         tokenizer
     )
 
-
     train_dataset = train_dataset.rename_column(
         "label",
         "labels"
@@ -95,51 +124,66 @@ def main():
         "labels"
     )
 
-
     model = AutoModelForSequenceClassification.from_pretrained(
         MODEL_NAME,
         num_labels=2
     )
 
-
     training_args = TrainingArguments(
-      output_dir="models/cuad_classifier",
 
-      num_train_epochs=3,
+        output_dir="models/cuad_classifier",
 
-      per_device_train_batch_size=1,
+        num_train_epochs=3,
 
-      per_device_eval_batch_size=1,
+        per_device_train_batch_size=1,
 
-      gradient_accumulation_steps=16,
+        per_device_eval_batch_size=1,
 
-      eval_strategy="epoch",
+        gradient_accumulation_steps=16,
 
-      save_strategy="epoch",
+        eval_strategy="epoch",
 
-      logging_steps=25,
+        save_strategy="epoch",
 
-      fp16=True,
+        logging_steps=25,
 
-      report_to="none",
+        fp16=True,
 
-      gradient_checkpointing=True
-)
+        report_to="none",
 
+        gradient_checkpointing=True
+    )
 
     trainer = Trainer(
+
         model=model,
 
         args=training_args,
 
         train_dataset=train_dataset,
 
-        eval_dataset=test_dataset
-    )
+        eval_dataset=test_dataset,
 
+        compute_metrics=compute_metrics
+    )
 
     trainer.train()
 
+    metrics = trainer.evaluate()
+
+    print("\n========== Evaluation Metrics ==========")
+    print(metrics)
+
+    with open(
+        "models/cuad_classifier/evaluation_metrics.json",
+        "w"
+    ) as f:
+
+        json.dump(
+            metrics,
+            f,
+            indent=4
+        )
 
     trainer.save_model(
         "models/cuad_classifier"
@@ -148,6 +192,10 @@ def main():
     tokenizer.save_pretrained(
         "models/cuad_classifier"
     )
+
+    print("\nModel saved successfully.")
+    print("Evaluation metrics saved to:")
+    print("models/cuad_classifier/evaluation_metrics.json")
 
 
 if __name__ == "__main__":
